@@ -1,0 +1,3 @@
+{
+    "eslint.workingDirectories": ["lambda-packages/identity_provider_handler", "lambda-packages/role_handler"]
+}

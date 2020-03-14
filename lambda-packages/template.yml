@@ -1,0 +1,65 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+      Runtime: nodejs12.x
+      Timeout: 900
+      Handler: index.handler
+
+Description: CloudFormation Custom Resources to create EKS IAM Role for Service Account
+
+Resources:
+  RoleCreationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./role_handler
+      Policies:
+      - Statement:
+        - Sid: Default
+          Effect: Allow
+          Action:
+          - eks:DescribeCluster
+          - iam:AttachRolePolicy
+          - iam:CreateRole
+          - iam:DeleteRole
+          - iam:DeleteRolePolicy
+          - iam:DescribeRole
+          - iam:DetachRolePolicy
+          - iam:GetRole
+          - iam:ListAttachedRolePolicies
+          - iam:ListRoles
+          - iam:PutRolePermissionsBoundary
+          - iam:PutRolePolicy
+          - iam:TagRole
+          - iam:UntagRole
+          - iam:UpdateAssumeRolePolicy
+          - iam:UpdateRole
+          - sts:GetCallerIdentity
+          Resource: '*'
+
+  OIDCIdentityProviderCreationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./identity_provider_handler
+      Policies:
+      - Statement:
+        - Sid: Default
+          Effect: Allow
+          Action:
+          - eks:DescribeCluster
+          - iam:CreateOpenIDConnectProvider
+          - iam:DeleteOpenIDConnectProvider
+          Resource: '*'
+
+Outputs:
+  RoleCreationFunction:
+    Description: Role creation Lambda function ARN
+    Value: !GetAtt RoleCreationFunction.Arn
+    Export:
+      Name: EKSIRSARoleCreationFunction
+  OIDCIdentityProviderCreationFunction:
+    Description: OIDC identity provider creation Lambda function ARN
+    Value: !GetAtt OIDCIdentityProviderCreationFunction.Arn
+    Export:
+      Name: EKSIRSAOIDCIdentityProviderCreationFunction

@@ -1,0 +1,28 @@
+{
+  "name": "amazon-eks-irsa-cfn",
+  "version": "0.1.0",
+  "author": "Michael S. Fischer",
+  "license": "Apache-2.0",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest && jest -c lambda-packages/identity_provider_handler/jest.config.js && jest -c lambda-packages/role_handler/jest.config.js",
+    "prepare": "tsc"
+  },
+  "devDependencies": {
+    "@aws-cdk/assert": "^1.30.0",
+    "@types/jest": "^24.0.22",
+    "@types/node": "^12.12.30",
+    "aws-cdk": "^1.30.0",
+    "jest": "^24.9.0",
+    "ts-jest": "^24.3.0",
+    "typescript": "^3.7.5"
+  },
+  "dependencies": {
+    "@aws-cdk/aws-cloudformation": "^1.30.0",
+    "@aws-cdk/aws-iam": "^1.30.0",
+    "@aws-cdk/aws-lambda": "^1.30.0",
+    "@aws-cdk/core": "^1.30.0"
+  }
+}
