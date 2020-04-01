@@ -4,3 +4,12 @@
 # CDK asset staging directory
 .cdk.staging
 cdk.out
+
+# SAM artifacts
+.aws-sam
+samconfig.toml
+
+jest.config.*
+.*
+*~
+.vscode/
