@@ -27,7 +27,7 @@ CloudFormation templates.
 Install the Construct Library into your TypeScript project as follows:
 
 ```sh
-npm install awslabs/amazon-eks-irsa-cfn
+npm install amazon-eks-irsa-cfn
 ```
 
 In your source code, import the Construct classes:
