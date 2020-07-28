@@ -1,5 +1,5 @@
 import { Construct, Duration, Lazy, Resource, Token } from '@aws-cdk/core';
-import { Grant, IManagedPolicy, Policy, PolicyDocument, PolicyStatement, ArnPrincipal, IPrincipal, PrincipalPolicyFragment, IRole } from '@aws-cdk/aws-iam';
+import { Grant, IManagedPolicy, Policy, PolicyDocument, PolicyStatement, ArnPrincipal, IPrincipal, PrincipalPolicyFragment, IRole, AddToPrincipalPolicyResult } from '@aws-cdk/aws-iam';
 import { AttachedPolicies } from './util';
 import { CustomResource, CustomResourceProvider } from '@aws-cdk/aws-cloudformation';
 import { Function, Code, Runtime } from '@aws-cdk/aws-lambda';
@@ -256,11 +256,25 @@ export class Role extends Resource implements IRole {
 
     /**
      * Attaches a managed policy to this role.
-     * @param policy The the managed policy to attach.
+     * @param policy The managed policy to attach.
      */
     public addManagedPolicy(policy: IManagedPolicy) {
         if (this.managedPolicies.find(mp => mp === policy)) { return; }
         this.managedPolicies.push(policy);
+    }
+
+    /**
+     * Adds a permission to the role's default policy document.
+     * If there is no default policy attached to this role, it will be created.
+     * @param statement The permission statement to add to the policy document
+     */
+    public addToPrincipalPolicy(statement: PolicyStatement): AddToPrincipalPolicyResult {
+        if (!this.defaultPolicy) {
+            this.defaultPolicy = new Policy(this, 'DefaultPolicy');
+            this.attachInlinePolicy(this.defaultPolicy);
+        }
+        this.defaultPolicy.addStatements(statement);
+        return { statementAdded: true, policyDependable: this.defaultPolicy };
     }
 
     /**
