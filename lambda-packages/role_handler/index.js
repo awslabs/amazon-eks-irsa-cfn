@@ -156,11 +156,17 @@ const generateRoleName = exports.generateRoleName = function (logicalResourceId)
   return roleName;
 };
 
-const deleteRole = async function (roleName) {
+const deleteRole = async function (roleName, props) {
   const iam = new aws.IAM();
 
   console.log(`Deleting role ${roleName}...`);
   try {
+    for (const arn of props.ManagedPolicyArns || []) {
+      await iam.detachRolePolicy({
+        RoleName: roleName,
+        PolicyArn: arn
+      }).promise();
+    }
     await iam.deleteRole({
       RoleName: roleName
     }).promise();
@@ -199,7 +205,7 @@ exports.handler = async function (event, context) {
         //            break;
       case 'Delete':
         physicalResourceId = event.PhysicalResourceId;
-        await deleteRole(physicalResourceId);
+        await deleteRole(physicalResourceId, event.ResourceProperties);
         break;
       default:
         throw new Error(`Unsupported request type ${event.RequestType}`);
