@@ -156,6 +156,73 @@ const generateRoleName = exports.generateRoleName = function (logicalResourceId)
   return roleName;
 };
 
+const updateRole = async function (roleName, props, oldProps) {
+  const iam = new aws.IAM();
+
+  if (waiter) {
+    // Used by the test suite, since waiters aren't mockable yet
+    iam.waitFor = waiter;
+  }
+
+  console.log(`Updating role ${roleName}...`);
+
+  const {
+    Role
+  } = await iam.getRole({
+    RoleName: props.RoleName
+  }).promise();
+
+  let updateRoleProps = {}
+  if (props.Description) {
+    updateRoleProps.Description = props.Description;
+  }
+  if (props.MaxSessionDuration) {
+    updateRoleProps.MaxSessionDuration = props.MaxSessionDuration;
+  }
+  if (updateRoleProps) {
+    updateRoleProps.RoleName = roleName;
+    await iam.updateRole(updateRoleProps).promise();
+  }
+
+  for (const policy of oldProps.Policies || []) {
+    if (!props.Policies || !props.Policies.map(x => x.PolicyName).includes(policy.PolicyName)) {
+      console.log(`Delete role policy ${policy.PolicyName}...`);
+      await iam.deleteRolePolicy({
+        RoleName: roleName,
+        PolicyName: policy.PolicyName
+      }).promise();
+    }
+  }
+  for (const policy of props.Policies || []) {
+    console.log(`Add role policy ${policy.PolicyName}...`);
+    await iam.putRolePolicy({
+      RoleName: roleName,
+      PolicyName: policy.PolicyName,
+      PolicyDocument: policy.PolicyDocument
+    }).promise();
+  }
+
+  for (const arn of oldProps.ManagedPolicyArns || []) {
+    if (!props.ManagedPolicyArns || !props.ManagedPolicyArns.includes(arn)) {
+      console.log(`Detach role policy ${arn}...`);
+      await iam.detachRolePolicy({
+        RoleName: roleName,
+        PolicyArn: arn
+      }).promise();
+    }
+  }
+  for (const arn of props.ManagedPolicyArns || []) {
+    if (!oldProps.ManagedPolicyArns || !oldProps.ManagedPolicyArns.includes(arn)) {
+      console.log(`Attach role policy ${arn}...`);
+      await iam.attachRolePolicy({
+        RoleName: roleName,
+        PolicyArn: arn
+      }).promise();
+    }
+  }
+  return Role;
+};
+
 const deleteRole = async function (roleName, props) {
   const iam = new aws.IAM();
 
@@ -188,6 +255,8 @@ exports.handler = async function (event, context) {
   if (process.stdout._handle) process.stdout._handle.setBlocking(true);
   if (process.stderr._handle) process.stderr._handle.setBlocking(true);
 
+  console.log(JSON.stringify(event))
+
   try {
     switch (event.RequestType) {
       case 'Create':
@@ -199,10 +268,13 @@ exports.handler = async function (event, context) {
         responseData.RoleId = role.RoleId;
         physicalResourceId = role.RoleName;
         break;
-        // TODO
-        //          case 'Update':
-        //            responseData.Arn = physicalResourceId = certificateArn;
-        //            break;
+      case 'Update':
+        physicalResourceId = event.PhysicalResourceId;
+        role = await updateRole(physicalResourceId, event.ResourceProperties, event.OldResourceProperties);
+        responseData.Arn = role.Arn;
+        responseData.RoleId = role.RoleId;
+        physicalResourceId = role.RoleName;
+        break;
       case 'Delete':
         physicalResourceId = event.PhysicalResourceId;
         await deleteRole(physicalResourceId, event.ResourceProperties);
