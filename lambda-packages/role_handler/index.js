@@ -172,20 +172,20 @@ const updateRole = async function (roleName, props, oldProps) {
     RoleName: props.RoleName
   }).promise();
 
-  let updateRoleProps = {}
-  if (props.Description) {
+  let updateRoleProps = {};
+  if (props.Description !== undefined) {
     updateRoleProps.Description = props.Description;
   }
-  if (props.MaxSessionDuration) {
+  if (props.MaxSessionDuration !== undefined) {
     updateRoleProps.MaxSessionDuration = props.MaxSessionDuration;
   }
-  if (updateRoleProps) {
+  if (updateRoleProps !== undefined) {
     updateRoleProps.RoleName = roleName;
     await iam.updateRole(updateRoleProps).promise();
   }
 
   for (const policy of oldProps.Policies || []) {
-    if (!props.Policies || !props.Policies.map(x => x.PolicyName).includes(policy.PolicyName)) {
+    if (props.Policies === undefined || !props.Policies.map(x => x.PolicyName).includes(policy.PolicyName)) {
       console.log(`Delete role policy ${policy.PolicyName}...`);
       await iam.deleteRolePolicy({
         RoleName: roleName,
@@ -203,16 +203,22 @@ const updateRole = async function (roleName, props, oldProps) {
   }
 
   for (const arn of oldProps.ManagedPolicyArns || []) {
-    if (!props.ManagedPolicyArns || !props.ManagedPolicyArns.includes(arn)) {
+    if (props.ManagedPolicyArns === undefined || !props.ManagedPolicyArns.includes(arn)) {
       console.log(`Detach role policy ${arn}...`);
-      await iam.detachRolePolicy({
-        RoleName: roleName,
-        PolicyArn: arn
-      }).promise();
+      try {
+        await iam.detachRolePolicy({
+          RoleName: roleName,
+          PolicyArn: arn
+        }).promise();
+      } catch (err) {
+        if (err.name !== 'NoSuchEntity') {
+          throw err;
+        }
+      }
     }
   }
   for (const arn of props.ManagedPolicyArns || []) {
-    if (!oldProps.ManagedPolicyArns || !oldProps.ManagedPolicyArns.includes(arn)) {
+    if (oldProps.ManagedPolicyArns === undefined || !oldProps.ManagedPolicyArns.includes(arn)) {
       console.log(`Attach role policy ${arn}...`);
       await iam.attachRolePolicy({
         RoleName: roleName,
