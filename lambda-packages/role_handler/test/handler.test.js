@@ -33,7 +33,12 @@ describe('IAM Role Resource Handler', () => {
       }]
     })
   };
+  const testPolicy2 = {
+    PolicyName: 'Test Policy 2',
+    PolicyDocument: testPolicy.PolicyDocument
+  };
   const testManagedPolicyArn = 'arn:aws:iam::aws:policy/AdministratorAccess';
+  const testManagedPolicyArn2 = 'arn:aws:iam::aws:policy/AmazonS3FullAccess';
   const testClusterOIDCIssuerURL = 'https://oidc.eks.us-east-1.amazonaws.com/id/EBAABEEF';
   const testIssuer = testClusterOIDCIssuerURL.replace(new RegExp('^https?://'), '');
   const testServiceAccount = 'testServiceAccount';
@@ -177,10 +182,82 @@ describe('IAM Role Resource Handler', () => {
           PolicyName: testPolicy.PolicyName,
           PolicyDocument: testPolicy.PolicyDocument
         }));
+        sinon.assert.calledWith(attachRolePolicyFake, sinon.match({
+          RoleName: testRoleName,
+          PolicyArn: testManagedPolicyArn,
+        }));
+        expect(request.isDone()).toBe(true);
+      });
+  });
+
+  test('Update operation updates an existing Role', () => {
+    const updateRoleFake = sinon.fake.resolves();
+    const getRoleFake = sinon.fake.resolves({
+      Role: {
+        RoleName: testRoleName
+      }
+    });
+    const putRolePolicyFake = sinon.fake.resolves();
+    const deleteRolePolicyFake = sinon.fake.resolves();
+    const attachRolePolicyFake = sinon.fake.resolves();
+    const detachRolePolicyFake = sinon.fake.resolves();
+
+    AWS.mock('IAM', 'updateRole', updateRoleFake);
+    AWS.mock('IAM', 'getRole', getRoleFake);
+    AWS.mock('IAM', 'putRolePolicy', putRolePolicyFake);
+    AWS.mock('IAM', 'deleteRolePolicy', deleteRolePolicyFake);
+    AWS.mock('IAM', 'attachRolePolicy', attachRolePolicyFake);
+    AWS.mock('IAM', 'detachRolePolicy', detachRolePolicyFake);
+
+    const request = nock(ResponseURL).put('/', body => {
+      return body.Status === 'SUCCESS';
+    }).reply(200);
+
+    return LambdaTester(handler.handler)
+      .event({
+        RequestType: 'Update',
+        RequestId: testRequestId,
+        PhysicalResourceId: testRoleName,
+        ResourceProperties: {
+          ClusterName: testClusterName,
+          RoleName: testRoleName,
+          Description: testDescription,
+          MaxSessionDuration: testMaxSessionDuration,
+          Policies: [testPolicy2],
+          ManagedPolicyArns: [testManagedPolicyArn2],
+          Namespace: testNamespace,
+          ServiceAccount: testServiceAccount
+        },
+        OldResourceProperties: {
+          RoleName: testRoleName,
+          Policies: [testPolicy],
+          ManagedPolicyArns: [testManagedPolicyArn],
+        }
+      }).expectResolve(() => {
+        sinon.assert.calledWith(getRoleFake, {
+          RoleName: testRoleName
+        });
+        sinon.assert.calledWith(updateRoleFake, {
+          RoleName: testRoleName,
+          MaxSessionDuration: testMaxSessionDuration,
+          Description: testDescription
+        });
+        sinon.assert.calledWith(deleteRolePolicyFake, sinon.match({
+          RoleName: testRoleName,
+          PolicyName: testPolicy.PolicyName
+        }));
         sinon.assert.calledWith(putRolePolicyFake, sinon.match({
           RoleName: testRoleName,
-          PolicyName: testPolicy.PolicyName,
-          PolicyDocument: testPolicy.PolicyDocument
+          PolicyName: testPolicy2.PolicyName,
+          PolicyDocument: testPolicy2.PolicyDocument
+        }));
+        sinon.assert.calledWith(detachRolePolicyFake, sinon.match({
+          RoleName: testRoleName,
+          PolicyArn: testManagedPolicyArn,
+        }));
+        sinon.assert.calledWith(attachRolePolicyFake, sinon.match({
+          RoleName: testRoleName,
+          PolicyArn: testManagedPolicyArn2,
         }));
         expect(request.isDone()).toBe(true);
       });
@@ -188,8 +265,10 @@ describe('IAM Role Resource Handler', () => {
 
   test('Delete operation deletes the IAM Role', () => {
     const deleteRoleFake = sinon.fake.resolves();
+    const detachRolePolicyFake = sinon.fake.resolves();
 
     AWS.mock('IAM', 'deleteRole', deleteRoleFake);
+    AWS.mock('IAM', 'detachRolePolicy', detachRolePolicyFake);
 
     const request = nock(ResponseURL).put('/', body => {
       return body.Status === 'SUCCESS';
@@ -199,10 +278,17 @@ describe('IAM Role Resource Handler', () => {
       .event({
         RequestType: 'Delete',
         RequestId: testRequestId,
-        PhysicalResourceId: testRoleName
+        PhysicalResourceId: testRoleName,
+        ResourceProperties: {
+          ManagedPolicyArns: [testManagedPolicyArn],
+        }
       }).expectResolve(() => {
         sinon.assert.calledWith(deleteRoleFake, sinon.match({
           RoleName: testRoleName
+        }));
+        sinon.assert.calledWith(detachRolePolicyFake, sinon.match({
+          RoleName: testRoleName,
+          PolicyArn: testManagedPolicyArn
         }));
         expect(request.isDone()).toBe(true);
       });
