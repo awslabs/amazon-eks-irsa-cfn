@@ -28,6 +28,7 @@ Resources:
           - iam:DetachRolePolicy
           - iam:GetRole
           - iam:ListAttachedRolePolicies
+          - iam:ListRolePolicies
           - iam:ListRoles
           - iam:PutRolePermissionsBoundary
           - iam:PutRolePolicy

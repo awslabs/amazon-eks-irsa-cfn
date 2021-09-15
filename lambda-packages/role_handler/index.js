@@ -229,17 +229,33 @@ const updateRole = async function (roleName, props, oldProps) {
   return Role;
 };
 
-const deleteRole = async function (roleName, props) {
+const deleteRole = async function (roleName) {
   const iam = new aws.IAM();
 
   console.log(`Deleting role ${roleName}...`);
   try {
-    for (const arn of props.ManagedPolicyArns || []) {
-      await iam.detachRolePolicy({
+    const rolePolicies = await iam.listRolePolicies({
+      RoleName: roleName
+    }).promise();
+    for (const policyName of rolePolicies.PolicyNames || []) {
+      console.log(`Delete role policy ${policyName}...`);
+      await iam.deleteRolePolicy({
         RoleName: roleName,
-        PolicyArn: arn
+        PolicyName: policyName
       }).promise();
     }
+
+    const attachedRolePolicies = await iam.listAttachedRolePolicies({
+      RoleName: roleName
+    }).promise();
+    for (const policy of attachedRolePolicies.AttachedPolicies || []) {
+      console.log(`Detach role policy ${policy.PolicyArn}...`);
+      await iam.detachRolePolicy({
+        RoleName: roleName,
+        PolicyArn: policy.PolicyArn
+      }).promise();
+    }
+
     await iam.deleteRole({
       RoleName: roleName
     }).promise();
@@ -283,7 +299,7 @@ exports.handler = async function (event, context) {
         break;
       case 'Delete':
         physicalResourceId = event.PhysicalResourceId;
-        await deleteRole(physicalResourceId, event.ResourceProperties);
+        await deleteRole(physicalResourceId);
         break;
       default:
         throw new Error(`Unsupported request type ${event.RequestType}`);
