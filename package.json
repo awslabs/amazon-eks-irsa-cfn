@@ -1,6 +1,6 @@
 {
   "name": "amazon-eks-irsa-cfn",
-  "version": "0.1.2",
+  "version": "2.1.2",
   "author": "Michael S. Fischer",
   "license": "Apache-2.0",
   "main": "lib/index.js",
