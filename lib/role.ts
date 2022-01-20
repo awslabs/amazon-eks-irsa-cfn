@@ -1,8 +1,9 @@
-import { Construct, Duration, Lazy, Resource, Token } from '@aws-cdk/core';
-import { Grant, IManagedPolicy, Policy, PolicyDocument, PolicyStatement, ArnPrincipal, IPrincipal, PrincipalPolicyFragment, IRole, AddToPrincipalPolicyResult } from '@aws-cdk/aws-iam';
+import { Construct } from 'constructs';
+import { CustomResource, Duration, Lazy, Resource, Token } from 'aws-cdk-lib';
+import { Grant, IManagedPolicy, Policy, PolicyDocument, PolicyStatement, ArnPrincipal, IPrincipal, PrincipalPolicyFragment, IRole, AddToPrincipalPolicyResult } from 'aws-cdk-lib/aws-iam';
 import { AttachedPolicies } from './util';
-import { CustomResource, CustomResourceProvider } from '@aws-cdk/aws-cloudformation';
-import { Function, Code, Runtime } from '@aws-cdk/aws-lambda';
+import { Provider, ProviderProps } from 'aws-cdk-lib/custom-resources';
+import { Function, Code, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { CfnRole } from './cfn';
 import * as path from 'path';
 
@@ -200,14 +201,18 @@ export class Role extends Resource implements IRole {
             }));
         }
 
+        const provider = new Provider(this, 'RoleProvider', {
+            onEventHandler: Role.fn
+        } as ProviderProps);
+
         const role = new CustomResource(this, 'Resource', {
-            provider: CustomResourceProvider.fromLambda(Role.fn),
+            serviceToken: provider.serviceToken,
             resourceType: 'Custom::IamRoleForServiceAccount',
             properties: {
                 ClusterName: props.clusterName,
                 Namespace: props.namespace || 'default',
                 ServiceAccount: props.serviceAccount,
-                ManagedPolicyArns: Lazy.listValue({ produce: () => this.managedPolicies.map(p => p.managedPolicyArn) }, { omitEmpty: true }),
+                ManagedPolicyArns: Lazy.list({ produce: () => this.managedPolicies.map(p => p.managedPolicyArn) }, { omitEmpty: true }),
                 Policies: _flatten(props.inlinePolicies),
                 Path: props.path,
                 PermissionsBoundary: this.permissionsBoundary ? this.permissionsBoundary.managedPolicyArn : undefined,
