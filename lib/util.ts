@@ -1,10 +1,14 @@
-import { DefaultTokenResolver, IConstruct, Lazy, StringConcat, Tokenization } from '@aws-cdk/core';
-import { IPolicy } from '@aws-cdk/aws-iam';
+// import { DefaultTokenResolver, IConstruct, Lazy, StringConcat, Tokenization } from '@aws-cdk/core';
+// import { IPolicy } from '@aws-cdk/aws-iam';
+
+import { DefaultTokenResolver, Lazy, StringConcat, Tokenization } from "aws-cdk-lib";
+import { IPolicy } from "aws-cdk-lib/aws-iam";
+import { IConstruct } from "constructs";
 
 const MAX_POLICY_NAME_LEN = 128;
 
 export function undefinedIfEmpty(f: () => string[]): string[] {
-  return Lazy.listValue({ produce: () => {
+  return Lazy.list({ produce: () => {
     const array = f();
     return (array && array.length > 0) ? array : undefined;
   }});

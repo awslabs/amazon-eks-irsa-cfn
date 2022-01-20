@@ -1,7 +1,8 @@
-import { Construct, Duration, Resource, Token } from '@aws-cdk/core';
-import { CustomResource, CustomResourceProvider } from '@aws-cdk/aws-cloudformation';
-import { PolicyStatement } from '@aws-cdk/aws-iam';
-import { Function, Code, Runtime } from '@aws-cdk/aws-lambda';
+import { Construct } from 'constructs';
+import { CustomResource, Duration, Resource, Token } from 'aws-cdk-lib/core';
+import { Provider, ProviderProps } from 'aws-cdk-lib/custom-resources';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { Function, Code, Runtime } from 'aws-cdk-lib/aws-lambda';
 import * as path from 'path';
 
 export interface OIDCIdentityProviderProps {
@@ -40,13 +41,18 @@ export class OIDCIdentityProvider extends Resource {
             }));
         }
 
-        const provider = new CustomResource(this, 'Resource', {
-            provider: CustomResourceProvider.fromLambda(OIDCIdentityProvider.fn),
+        const provider = new Provider(this, 'OIDCIdentityProvider', {
+            onEventHandler: OIDCIdentityProvider.fn
+        } as ProviderProps);
+
+
+        const customResource = new CustomResource(this, 'Resource', {
+            serviceToken: provider.serviceToken,
             resourceType: 'Custom::EksOidcIdentityProvider',
             properties: {
                 ClusterName: props.clusterName,
             }
         });
-        this.providerArn = Token.asString(provider.getAtt('Arn'));
+        this.providerArn = Token.asString(customResource.getAtt('Arn'));
     }
 }
