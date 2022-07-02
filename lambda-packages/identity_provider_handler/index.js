@@ -80,7 +80,7 @@ const createProvider = async function (url) {
     // hard-coding this for now to be safe - this is the certificate
     // thumbprint for the EKS OIDC endpoint CA
     ThumbprintList: [eksOIDCCAThumbprint],
-    ClientIDList: ['sts.amazon.com']
+    ClientIDList: ['sts.amazonaws.com']
   }).promise();
   return provider.OpenIDConnectProviderArn;
 };

@@ -92,7 +92,7 @@ describe('OIDC Identity Provider Handler', () => {
         sinon.assert.calledWith(createProviderFake, sinon.match({
           Url: testClusterOIDCIssuerURL,
           ThumbprintList: [handler.eksOIDCCAThumbprint],
-          ClientIDList: ['sts.amazon.com']
+          ClientIDList: ['sts.amazonaws.com']
         }));
         expect(request.isDone()).toBe(true);
       });
@@ -164,7 +164,7 @@ describe('OIDC Identity Provider Handler', () => {
         sinon.assert.calledWith(createProviderFake, sinon.match({
           Url: testNewClusterOIDCIssuerURL,
           ThumbprintList: [handler.eksOIDCCAThumbprint],
-          ClientIDList: ['sts.amazon.com']
+          ClientIDList: ['sts.amazonaws.com']
         }));
         expect(request.isDone()).toBe(true);
       });
