@@ -10,3 +10,6 @@ cdk.out
 # SAM artifacts
 .aws-sam
 samconfig.toml
+
+# OS artifacts
+.DS_Store
