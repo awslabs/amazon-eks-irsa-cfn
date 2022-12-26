@@ -304,6 +304,13 @@ export class Role extends Resource implements IRole {
     public grantPassRole(identity: IPrincipal) {
         return this.grant(identity, 'iam:PassRole');
     }
+
+    /**
+     * Grant permissions to the given principal to assume this role.
+     */
+    public grantAssumeRole(grantee: IPrincipal) {
+        return this.grant(grantee, 'sts:AssumeRole');
+    }
 }
 
 
