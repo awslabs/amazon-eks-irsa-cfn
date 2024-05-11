@@ -1,3 +1,13 @@
+> [!IMPORTANT]
+> This repository has been archived and will no longer receive updates. The functionality it
+> provides is no longer necessary -- please consider using
+> [EKS Pod Identities](https://docs.aws.amazon.com/eks/latest/userguide/pod-identities.html)
+> instead of IAM Roles for Service Accounts to allow your Pods to obtain AWS IAM credentials.
+> Alternatively, you can use CDK's native
+> [ServiceAccount](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_eks.ServiceAccount.html) functionality.
+> **Use this repository at your own risk as it is no longer being monitored for dependency
+> vulnerabilities or other security issues.**
+
 # Amazon EKS IAM Role for Service Accounts CDK/CloudFormation Library
 
 This repository contains an [AWS
@@ -10,12 +20,12 @@ Account](https://kubernetes.io/docs/tasks/configure-pod-container/configure-serv
 This role is known as an IRSA, or [IAM Role for Service
 Account](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
 This role can be associated with an [Amazon EKS](https://aws.amazon.com/eks/)
-Cluster that you're creating in the same CloudFormation stack.  Alternatively,
+Cluster that you're creating in the same CloudFormation stack. Alternatively,
 the EKS Cluster can be created in a different stack and referenced by name.
 
 For ease of implementation, this repository also contains a [CDK
 Construct](https://docs.aws.amazon.com/cdk/latest/guide/constructs.html) library
-you can import and use to easily create a Role.  This is the quickest and most
+you can import and use to easily create a Role. This is the quickest and most
 programmatic way to build the Role.
 
 Alternatively, a SAM Template is available that you can use to deploy the Custom
@@ -33,7 +43,7 @@ npm install amazon-eks-irsa-cfn
 In your source code, import the Construct classes:
 
 ```typescript
-import { Role, OIDCIdentityProvider } from 'amazon-eks-irsa-cfn';
+import { Role, OIDCIdentityProvider } from "amazon-eks-irsa-cfn";
 ```
 
 Then declare the Constructs in your CDK Stack or Construct. The `Role` class
@@ -43,25 +53,24 @@ See also
 https://docs.aws.amazon.com/cdk/api/latest/docs/@aws-cdk_aws-iam.Role.html for a
 list of additional properties that can be supplied when instantiating a `Role`.
 
-
 ```typescript
-const provider = new OIDCIdentityProvider(this, 'Provider', {
-    clusterName: 'MyCluster'
+const provider = new OIDCIdentityProvider(this, "Provider", {
+  clusterName: "MyCluster",
 });
 
-const role = new Role(this, 'Role', {
-    clusterName: 'MyCluster',
-    serviceAccount: 'myServiceAccount',
-    namespace: 'default',
-    // All other properties available in an `aws-iam.Role` class are available
-    // e.g. `path`, `maxSessionDuration`, `description`, etc.
+const role = new Role(this, "Role", {
+  clusterName: "MyCluster",
+  serviceAccount: "myServiceAccount",
+  namespace: "default",
+  // All other properties available in an `aws-iam.Role` class are available
+  // e.g. `path`, `maxSessionDuration`, `description`, etc.
 });
 ```
 
 ## SAM Template and CloudFormation Custom Resources
 
 There is a SAM Template located in the [`lambda-packages`](lambda-packages/)
-folder.  It also properly associates the IAM Policies needed for the Lambda
+folder. It also properly associates the IAM Policies needed for the Lambda
 functions to execute properly.
 
 To deploy it, you can run:
@@ -73,8 +82,8 @@ sam deploy
 
 The Stack that is created by the Template exports the following values:
 
-* `EKSIRSARoleCreationFunction` - Role creation Lambda function ARN
-* `OIDCIdentityProviderCreationFunction` - OIDC identity provider creation Lambda function ARN
+- `EKSIRSARoleCreationFunction` - Role creation Lambda function ARN
+- `OIDCIdentityProviderCreationFunction` - OIDC identity provider creation Lambda function ARN
 
 Once you've deployed the package, you can refer to the Lambda
 functions in your CloudFormation Stacks.
@@ -84,20 +93,20 @@ Custom Resources:
 
 ```yaml
 Resources:
-    MyIdentityProvider:
-        Type: Custom::OIDCIdentityProvider
-        Properties:
-            ServiceToken: !ImportValue OIDCIdentityProviderCreationFunction
-            ClusterName: MyCluster
+  MyIdentityProvider:
+    Type: Custom::OIDCIdentityProvider
+    Properties:
+      ServiceToken: !ImportValue OIDCIdentityProviderCreationFunction
+      ClusterName: MyCluster
 
-    MyRole:
-        Type: Custom::ServiceAccountRole
-        Properties:
-            ServiceToken: !ImportValue EKSIRSARoleCreationFunction
-            ClusterName: MyCluster
-            ServiceAccount: myServiceAccount
-            # All other properties supported by AWS::IAM::Role can be
-            # added here, like Description, Policies, etc.
+  MyRole:
+    Type: Custom::ServiceAccountRole
+    Properties:
+      ServiceToken: !ImportValue EKSIRSARoleCreationFunction
+      ClusterName: MyCluster
+      ServiceAccount: myServiceAccount
+      # All other properties supported by AWS::IAM::Role can be
+      # added here, like Description, Policies, etc.
 ```
 
 ## License
